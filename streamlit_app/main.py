@@ -1,5 +1,7 @@
 import sys
 import os
+import pandas as pd
+import io
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.data_processing import load_data, calculate_summary, aggregate_by_category
@@ -150,5 +152,41 @@ if uploaded_file:
                 calculate_scenario(s, summary["total_area"], total_cost)
                 for s in st.session_state.user_scenarios
             ]
+            comparison_results += user_results
+        st.dataframe(comparison_results)
 
-            st.dataframe(comparison_results+user_results)
+        to_excel = io.BytesIO()
+        with pd.ExcelWriter(to_excel, engine="openpyxl") as writer:
+            # 📋 Raw data
+            df.to_excel(writer, sheet_name="Raw Data", index=False)
+
+            # 📊 Scenario summary
+            pd.DataFrame(comparison_results).drop(columns=["Cash Flow"]).to_excel(
+                writer, sheet_name="Scenario Summary", index=False
+            )
+
+            # ⚙️ Parameters
+            if st.session_state.user_scenarios:
+                pd.DataFrame(st.session_state.user_scenarios).to_excel(
+                    writer, sheet_name="Scenario Parameters", index=False
+                )
+
+            # 📈 Cash Flows (по одному листу на каждый сценарий)
+            for scenario, result in zip(st.session_state.user_scenarios, comparison_results):
+                cash_flow = result.get("Cash Flow")
+                if cash_flow:
+                    df_cf = pd.DataFrame({
+                        "Year": list(range(len(cash_flow))),
+                        "Cash Flow": cash_flow
+                    })
+                    sheet_name = scenario["name"][:31]  # Excel ограничение
+                    df_cf.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        to_excel.seek(0)
+
+        st.download_button(
+            label="📥 Download Full Excel Report",
+            data=to_excel,
+            file_name="bim_finance_full_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )

@@ -27,5 +27,6 @@ def calculate_scenario(params, total_area, total_cost):
         "Scenario": params["name"],
         "ROI": f"{roi * 100:.2f}%",
         "NPV": f"${npv:,.0f}",
-        "IRR": f"{irr * 100:.2f}%"
+        "IRR": f"{irr * 100:.2f}%",
+        "Cash Flow": cash_flow
     }
