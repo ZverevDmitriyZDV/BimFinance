@@ -23,8 +23,9 @@ def bar_chart_by_cost(agg_df):
 def cash_flow_chart(cash_flows):
     years = list(range(len(cash_flows)))
     fig = go.Figure([go.Bar(x=years, y=cash_flows)])
+
     fig.update_layout(
-    title="💸 Cash Flow by Year",
-    xaxis_title="Year",
-    yaxis_title="Cash Flow ($)")
+        title="💸 Cash Flow by Year",
+        xaxis_title="Year",
+        yaxis_title="Cash Flow ($)")
     return fig

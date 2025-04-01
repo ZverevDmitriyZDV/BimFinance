@@ -7,7 +7,9 @@ from app.data_processing import load_data, calculate_summary, aggregate_by_categ
 from app.visualizations import pie_chart_by_area, bar_chart_by_cost, cash_flow_chart
 from app.finance import calculate_roi, calculate_npv, generate_cash_flow
 
+
 st.set_page_config(page_title="BIM Finance Analyzer", layout="wide")
+
 st.title("🏗️ BIM Finance Analyzer")
 
 uploaded_file = st.file_uploader("Upload your BIM Excel data", type=["xlsx"])
@@ -26,6 +28,7 @@ if uploaded_file:
     st.subheader("📊 Summary")
     st.markdown(f"**Total Area:** {summary['total_area']:.2f} m²")
     st.markdown(f"**Total Cost:** ${summary['total_cost']:,.2f}")
+
 
     st.plotly_chart(pie_chart_by_area(agg_df))
     st.plotly_chart(bar_chart_by_cost(agg_df))
