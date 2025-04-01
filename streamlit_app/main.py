@@ -1,17 +1,25 @@
-import streamlit as st
 import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.data_processing import load_data, calculate_summary, aggregate_by_category
-from app.visualizations import pie_chart_by_area, bar_chart_by_cost, cash_flow_chart
-from app.finance import calculate_roi, calculate_npv, generate_cash_flow_advanced
+from app.finance import calculate_roi, calculate_npv, generate_cash_flow_advanced, npv_sensitivity, find_irr
+from app.visualizations import pie_chart_by_area, bar_chart_by_cost, cash_flow_chart, npv_sensitivity_chart
+import streamlit as st
 
 st.set_page_config(page_title="BIM Finance Analyzer", layout="wide")
 
 st.title("🏗️ BIM Finance Analyzer")
 
 uploaded_file = st.file_uploader("Upload your BIM Excel data", type=["xlsx"])
+
+
+def markdown_with_tab(text_line: str, pixels_dist: int = 50):
+    return st.markdown(
+        f"<span style='margin-left: {pixels_dist}px'>{text_line}</span>",
+        unsafe_allow_html=True
+    )
+
 
 if uploaded_file:
     df = load_data(uploaded_file)
@@ -22,8 +30,8 @@ if uploaded_file:
     agg_df = aggregate_by_category(df)
 
     st.subheader("📊 Summary")
-    st.markdown(f"**Total Area:** {summary['total_area']:.2f} m²")
-    st.markdown(f"**Total Cost:** ${summary['total_cost']:,.2f}")
+    markdown_with_tab(f"**Total Area:** {summary['total_area']:.2f} m²")
+    markdown_with_tab(f"**Total Cost:** ${summary['total_cost']:,.2f}")
 
     st.subheader("📌 Aggregated by Category")
     st.dataframe(agg_df)
@@ -75,9 +83,18 @@ if uploaded_file:
     roi = calculate_roi(total_income, total_cost)
     npv = calculate_npv(yearly_income_equivalent, total_cost, years, discount_rate)
 
+    if st.checkbox("📊 Show NPV Sensitivity Analysis"):
+        rates = [i / 100 for i in range(1, 31)]  # 1% to 30%
+        sensitivity = npv_sensitivity(yearly_income_equivalent, total_cost, years, rates)
+        irr = find_irr(yearly_income_equivalent, total_cost, years)
+
+        st.markdown(f"**Estimated IRR:** {irr:.2%}")
+        st.plotly_chart(npv_sensitivity_chart(sensitivity, irr))
+
     st.subheader("📈 Results")
-    st.markdown(f"**Total Income:** ${total_income:,.2f}")
-    st.markdown(f"**ROI:** {roi * 100:.2f}%")
-    st.markdown(f"**NPV:** ${npv:,.2f}")
+
+    markdown_with_tab(f"**Total Income:** ${total_income:,.2f}")
+    markdown_with_tab(f"**ROI:** {roi * 100:.2f}%")
+    markdown_with_tab(f"**NPV:** ${npv:,.2f}")
 
     st.plotly_chart(cash_flow_chart(cash_flow))

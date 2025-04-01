@@ -29,3 +29,23 @@ def cash_flow_chart(cash_flows):
         xaxis_title="Year",
         yaxis_title="Cash Flow ($)")
     return fig
+
+
+def npv_sensitivity_chart(npv_results: dict, irr: float = None):
+    rates = list(npv_results.keys())
+    values = list(npv_results.values())
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=rates, y=values, mode='lines+markers', name="NPV vs Discount Rate"))
+
+    if irr:
+        fig.add_vline(x=irr, line_dash="dash", line_color="red", annotation_text=f"IRR ≈ {irr:.2%}",
+                      annotation_position="top right")
+
+    fig.update_layout(
+        title="📉 NPV Sensitivity Analysis",
+        xaxis_title="Discount Rate",
+        yaxis_title="NPV ($)",
+        hovermode="x unified"
+    )
+    return fig

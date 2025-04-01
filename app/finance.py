@@ -48,3 +48,35 @@ def generate_cash_flow_advanced(
     return cash_flows
 
 
+def npv_sensitivity(
+        yearly_income: float,
+        cost: float,
+        years: int,
+        rates: list[float]
+) -> dict:
+    """Вычисляет NPV при разных ставках дисконтирования"""
+    results = {}
+    for rate in rates:
+        npv = calculate_npv(yearly_income, cost, years, rate)
+        results[rate] = npv
+    return results
+
+
+def find_irr(
+        yearly_income: float,
+        cost: float,
+        years: int,
+        precision: float = 0.0001,
+        max_rate: float = 1.0
+) -> float:
+    """Находит IRR (ставку, при которой NPV ≈ 0) бинарным поиском"""
+    low = 0.0
+    high = max_rate
+    while high - low > precision:
+        mid = (low + high) / 2
+        npv = calculate_npv(yearly_income, cost, years, mid)
+        if npv > 0:
+            low = mid
+        else:
+            high = mid
+    return (low + high) / 2
