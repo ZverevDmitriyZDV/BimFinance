@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.data_processing import load_data, calculate_summary, aggregate_by_category
 from app.finance import calculate_roi, calculate_npv, generate_cash_flow_advanced, npv_sensitivity, find_irr
 from app.visualizations import pie_chart_by_area, bar_chart_by_cost, cash_flow_chart, npv_sensitivity_chart
+from app.scenario_engine import calculate_scenario
 import streamlit as st
 
 st.set_page_config(page_title="BIM Finance Analyzer", layout="wide")
@@ -98,3 +99,56 @@ if uploaded_file:
     markdown_with_tab(f"**NPV:** ${npv:,.2f}")
 
     st.plotly_chart(cash_flow_chart(cash_flow))
+
+    if "user_scenarios" not in st.session_state:
+        st.session_state.user_scenarios = []
+
+    if not st.checkbox("📊 hide scenarios"):
+        st.subheader("🛠️ Create Your Own Scenario")
+
+        scenarios = [
+            {"name": "100% Rent", "rent_share": 1.0, "sale_share": 0.0, "occupancy": 0.9, "price_per_m2": price_per_m2,
+             "years": years, "growth_rate": growth_rate, "start_year": start_year},
+            {"name": "100% Sale", "rent_share": 0.0, "sale_share": 1.0, "occupancy": 1.0, "price_per_m2": price_per_m2,
+             "years": years, "growth_rate": 0.0, "start_year": start_year},
+            {"name": "50/50 Mix", "rent_share": 0.5, "sale_share": 0.5, "occupancy": 0.85, "price_per_m2": price_per_m2,
+             "years": years, "growth_rate": 0.03, "start_year": start_year}
+        ]
+
+        comparison_results = [calculate_scenario(s, summary["total_area"], total_cost) for s in scenarios]
+        # st.dataframe(comparison_results)
+
+        with st.form("add_scenario_form"):
+            scenario_name = st.text_input("Scenario Name", value="Scenario")
+            rent_share = st.slider("Rent Share", 0.0, 1.0, 0.5, step=0.1)
+            sale_share = st.slider("Sale Share", 0.0, 1.0 - rent_share, 0.5, step=0.1)
+            occupancy = st.slider("Occupancy Rate", 0.0, 1.0, 0.9, step=0.05)
+            growth = st.slider("Annual Rent Growth", 0.0, 0.2, 0.05, step=0.01)
+            years_input = st.number_input("Project Duration (Years)", min_value=1, value=5)
+            start_year_input = st.slider("Start Year for Rent", min_value=1, max_value=years_input, value=1)
+
+            submitted = st.form_submit_button("➕ Add Scenario")
+
+            if submitted:
+                new_scenario = {
+                    "name": scenario_name,
+                    "rent_share": rent_share,
+                    "sale_share": sale_share,
+                    "occupancy": occupancy,
+                    "price_per_m2": price_per_m2,
+                    "years": years_input,
+                    "growth_rate": growth,
+                    "start_year": start_year_input
+                }
+                st.session_state.user_scenarios.append(new_scenario)
+                st.success(f"Scenario '{scenario_name}' added!")
+
+        if st.session_state.user_scenarios:
+            st.subheader("📊 Scenario Comparison")
+
+            user_results = [
+                calculate_scenario(s, summary["total_area"], total_cost)
+                for s in st.session_state.user_scenarios
+            ]
+
+            st.dataframe(comparison_results+user_results)
